@@ -20,6 +20,9 @@ const findToken = (row , arr = []) => {
                 arr.push("\"")
                 return findToken(row.slice(+i+1), arr)
             }
+            else if(row[i] == "/"){
+                return arr
+            }
             else{
                 if(symbols.some(symbol => symbol == row[i])){
                     let newRow = [...row].join("")
