@@ -1,5 +1,12 @@
 const symbols = ["+", "-", "/", "*", ";", " ", "(", ")", "=", "{", "}"]
 
+const tokensTypes = {
+    "operation" : ["+", "-", "*", "/", "="],
+    "keyword" : ["var", "const", "out"],
+    "endpoint" : [";"],
+    "quote" : ["\"", "(", ")"],
+}
+
 const findToken = (row , arr = []) => { 
     if(row.length > 0){
         if(![...row].some(e => e == ";")){
@@ -8,7 +15,7 @@ const findToken = (row , arr = []) => {
         }
         for(let i = 0; i < row.length; i++){
             if(row[i] == "\""){
-                arr.push("\"")
+                //arr.push("\"")
                 let str = ""
                 i++
                 while(row[i] != "\""){
@@ -16,8 +23,8 @@ const findToken = (row , arr = []) => {
                     i++
                     console.log(str)
                 }
-                arr.push(str)
-                arr.push("\"")
+                arr.push(`"${str}"`)
+                //arr.push("\"")
                 return findToken(row.slice(+i+1), arr)
             }
             else if(row[i] == "/"){
@@ -45,7 +52,17 @@ const lexer = e => {
     rows.map((row) => {
         let tokens = []
         findToken(row, tokens)
-        $("textarea#output").val($("textarea#output").val()  + tokens.filter(e => e != "").join("\n")+ "\n")
+        tokens = tokens.filter(e => e != "")
+        tokens = tokens.map((token, index) => {
+            let key = Object.keys(tokensTypes).find(key => tokensTypes[key].some(tokenFound => tokenFound == token))
+            if(key)
+                return `${key} ${token}`
+            if(Number(token))
+                return `number ${token}`
+            return `variable ${token}`
+        })
+        console.log()
+        $("textarea#output").val($("textarea#output").val()  + tokens.join("\n")+ "\n")
         
     })
 }
