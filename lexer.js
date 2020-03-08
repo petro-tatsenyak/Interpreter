@@ -2,10 +2,13 @@ const symbols = ["+", "-", "/", "*", ";", " ", "(", ")", "=", "{", "}"]
 
 const tokensTypes = {
     "operation" : ["+", "-", "*", "/", "="],
-    "keyword" : ["var", "const", "out"],
+    "keyword" : ["var", "const"],
+    "funktion" : ["out"],
     "endpoint" : [";"],
     "quote" : ["\"", "(", ")"],
 }
+
+let variables = []
 
 const findToken = (row , arr = []) => { 
     if(row.length > 0){
@@ -15,19 +18,16 @@ const findToken = (row , arr = []) => {
         }
         for(let i = 0; i < row.length; i++){
             if(row[i] == "\""){
-                //arr.push("\"")
                 let str = ""
                 i++
                 while(row[i] != "\""){
                     str += row[i]
                     i++
-                    console.log(str)
                 }
                 arr.push(`"${str}"`)
-                //arr.push("\"")
                 return findToken(row.slice(+i+1), arr)
             }
-            else if(row[i] == "/"){
+            else if(row[i] == "/" && row[i+1] == "/"){
                 return arr
             }
             else{
@@ -45,6 +45,39 @@ const findToken = (row , arr = []) => {
     }
 }
 
+const runRow = tokens => {
+    if(Object.keys(tokens[0]) == "keyword")
+        return createVariable(tokens)
+    return "no keywords"
+}  
+
+const createVariable = tokens => {
+    let value
+    if(Object.values(tokens[2]) == ";"){
+       value = undefined
+    }
+    else{
+        if(Object.values(tokens[2])  == "="){
+            let [keyword, variable, equal, ...expression] = tokens
+            expression.pop()
+            value = calcExpression(expression)
+        }
+        else{
+            return "Error"
+        }
+    }
+    variables.push({
+        [Object.values(tokens[1])]: value
+    })
+    return value
+}
+
+const calcExpression = elements => {
+    if(elements.length == 1)
+        return Object.values(elements[0])[0]
+    return "binary expression"
+}
+
 const lexer = e => {                                                
     let inputData = $('#input').val()
     let rows = inputData.split(/\n/)   
@@ -56,13 +89,14 @@ const lexer = e => {
         tokens = tokens.map((token, index) => {
             let key = Object.keys(tokensTypes).find(key => tokensTypes[key].some(tokenFound => tokenFound == token))
             if(key)
-                return `${key} ${token}`
+                return {[key]: token}
             if(Number(token))
-                return `number ${token}`
-            return `variable ${token}`
+                return {"number": token}
+            return {"variable": token}
         })
-        console.log()
-        $("textarea#output").val($("textarea#output").val()  + tokens.join("\n")+ "\n")
-        
+        tokens.map(token => {
+            $("textarea#output").val($("textarea#output").val()  + Object.keys(token) + " : " + Object.values(token) + "\n")
+        })
+        console.log(runRow(tokens))
     })
 }
