@@ -48,6 +48,8 @@ const findToken = (row , arr = []) => {
 const runRow = tokens => {
     if(Object.keys(tokens[0]) == "keyword")
         return createVariable(tokens)
+    if(Object.keys(tokens[0]) == "variable")
+        return changeVariable(tokens)
     return "no keywords"
 }  
 
@@ -72,13 +74,34 @@ const createVariable = tokens => {
     return value
 }
 
+const changeVariable = tokens => {
+    let foundVariableIndex = variables.findIndex(variable => 
+        Object.values(tokens[0])[0] == Object.keys(variable)[0]
+    )
+    let value
+    if(!foundVariableIndex){
+       return "Error"
+    }
+    else{
+        if(Object.values(tokens[1])  == "="){
+            let [variable, equal, ...expression] = tokens
+            expression.pop()
+            value = calcExpression(expression)
+        }
+        else{
+            return "Error"
+        }
+    }
+    variables[foundVariableIndex][Object.values(tokens[0])[0]] = value
+    return value
+}
 
 // Need to fix Undefined variables
 // Row 90
 
 const calcExpression = elements => {
     if(elements.length == 1)
-        return Object.values(elements[0])[0]
+        return Number.isInteger(+Object.values(elements[0])[0])?+Object.values(elements[0])[0]:Object.values(elements[0])[0]
     return math.evaluate(Object.values(elements).map(e => {
         if(Object.keys(e)[0] == "variable"){
             let foundVariableIndex = variables.findIndex(variable => 
@@ -115,5 +138,6 @@ const lexer = e => {
             $("textarea#output").val($("textarea#output").val()  + Object.keys(token) + " : " + Object.values(token) + "\n")
         })
         console.log(runRow(tokens))
+        console.log(variables)
     })
 }
