@@ -3,7 +3,7 @@ const symbols = ["+", "-", "/", "*", ";", " ", "(", ")", "=", "{", "}"]
 const tokensTypes = {
     "operation" : ["+", "-", "*", "/", "="],
     "keyword" : ["var", "const"],
-    "funktion" : ["out"],
+    "function" : ["out"],
     "endpoint" : [";"],
     "quote" : ["\"", "(", ")"],
 }
@@ -72,10 +72,27 @@ const createVariable = tokens => {
     return value
 }
 
+
+// Need to fix Undefined variables
+// Row 90
+
 const calcExpression = elements => {
     if(elements.length == 1)
         return Object.values(elements[0])[0]
-    return "binary expression"
+    return math.evaluate(Object.values(elements).map(e => {
+        if(Object.keys(e)[0] == "variable"){
+            let foundVariableIndex = variables.findIndex(variable => 
+                Object.values(e)[0] == Object.keys(variable)[0]
+            )
+            if(foundVariableIndex != -1)    
+                return Object.values(variables[foundVariableIndex])[0]
+            else
+                return "Variable not Found"
+        }
+        else{
+            return Object.values(e)[0]
+        }
+    }).join(""))
 }
 
 const lexer = e => {                                                
