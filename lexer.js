@@ -4,15 +4,27 @@ const tokensTypes = {
     "operation" : ["+", "-", "*", "/", "="],
     "keyword" : ["var", "const"],
     "function" : ["out"],
-    "endpoint" : [";"],
+    "endpoint" : [";", "{", "}"],
     "quote" : ["\"", "(", ")"],
+    "condition": ["if"],
+    "loop" : ["while"]
 }
 
 let variables = []
 
+let cond = true 
+
+let loopTokenCreate = false
+
+let lastCheck = true
+
+let loopActive = false
+
+let loopTokens = []
+
 const findToken = (row , arr = []) => { 
     if(row.length > 0){
-        if(![...row].some(e => e == ";")){
+        if(![...row].some(e => e == ";" || e == "{" || e == "}" || e == ")")){
             arr.push("Error: expect \";\"")
             return arr
         }
@@ -46,11 +58,45 @@ const findToken = (row , arr = []) => {
 }
 
 const runRow = tokens => {
-    if(Object.keys(tokens[0]) == "keyword")
-        return createVariable(tokens)
-    if(Object.keys(tokens[0]) == "variable")
-        return changeVariable(tokens)
-    return "no keywords"
+    if(loopTokenCreate)
+        loopTokens.push(tokens)
+    if(cond){
+        if(Object.keys(tokens[0]) == "keyword")
+            return createVariable(tokens)
+        if(Object.keys(tokens[0]) == "variable")
+            return changeVariable(tokens)
+        if(Object.keys(tokens[0]) == "function")
+            return runFunction(tokens)
+        if(Object.keys(tokens[0]) == "condition"){
+            cond = checkConditon(tokens)
+            return cond
+        }
+        if(Object.keys(tokens[0]) == "loop"){
+            cond = checkConditon(tokens)
+            lastCheck = tokens
+            loopActive = true
+            loopTokenCreate = true
+            return cond
+        }
+        if(loopActive){
+            if(Object.values(tokens[0])[0] == "}"){    
+                cond = checkConditon(lastCheck)
+                if(cond){
+                    loopTokenCreate = false
+                    loopTokens.map(loopElem => runRow(loopElem))
+                }
+                else{
+                    loopActive = false
+                    cond = true
+                }
+            }
+        }
+    }
+    else{
+        if(Object.values(tokens[0])[0] == "}"){    
+            cond = true
+        }
+    }
 }  
 
 const createVariable = tokens => {
@@ -62,7 +108,13 @@ const createVariable = tokens => {
         if(Object.values(tokens[2])  == "="){
             let [keyword, variable, equal, ...expression] = tokens
             expression.pop()
-            value = calcExpression(expression)
+            if(expression.length == 1){
+                value = Number.isInteger(+Object.values(expression[0])[0])?+Object.values(expression[0])[0]:
+                Object.values(expression[0])[0]
+            }
+            else{
+                value = calcExpression(expression)
+            }  
         }
         else{
             return "Error"
@@ -79,11 +131,11 @@ const changeVariable = tokens => {
         Object.values(tokens[0])[0] == Object.keys(variable)[0]
     )
     let value
-    if(!foundVariableIndex){
+    if(foundVariableIndex < 0){
        return "Error"
     }
     else{
-        if(Object.values(tokens[1])  == "="){
+        if(Object.values(tokens[1])[0]  == "="){
             let [variable, equal, ...expression] = tokens
             expression.pop()
             value = calcExpression(expression)
@@ -96,6 +148,45 @@ const changeVariable = tokens => {
     return value
 }
 
+const checkConditon = tokens => {
+    let [key, open,...conditions] = tokens
+    conditions.pop()
+    let foundVariableIndex = variables.findIndex(variable => 
+        Object.values(conditions).map(e => Object.values(e)[0]).some(e => e == Object.keys(variable)[0])
+    )
+    return eval(Object.values(conditions).map(e => {
+        if(Object.values(e)[0] ==  Object.keys(Object.values(variables)[foundVariableIndex])[0]){
+            return `${Object.values(Object.values(variables)[foundVariableIndex])[0]}`
+        }    
+        return Object.values(e)[0]
+    }).join(""))
+}
+
+const runFunction = tokens => {
+    if(Object.values(tokens[0])[0] == "out"){
+        let [name, open, param, close] = tokens
+        return out(param)
+    }
+     
+}
+
+const out = param => {
+    let outText = "" 
+    let foundVariableIndex = variables.findIndex(variable => 
+        Object.values(param)[0] == Object.keys(variable)[0]
+    )
+    if(foundVariableIndex > -1){
+        outText += Object.values(variables[foundVariableIndex])[0] 
+    }
+    else{
+        if(Object.values(param)[0] == "\\")
+            outText += "\n"
+        else
+            outText += Object.values(param)[0]
+    }
+    outText = [...outText].filter(e => e != "\"").join("")
+    $("textarea#output").val($("textarea#output").val() + outText)
+}
 // Need to fix Undefined variables
 // Row 90
 
@@ -134,10 +225,7 @@ const lexer = e => {
                 return {"number": token}
             return {"variable": token}
         })
-        tokens.map(token => {
-            $("textarea#output").val($("textarea#output").val()  + Object.keys(token) + " : " + Object.values(token) + "\n")
-        })
-        console.log(runRow(tokens))
-        console.log(variables)
+        runRow(tokens)
+        //console.log(variables)
     })
 }
