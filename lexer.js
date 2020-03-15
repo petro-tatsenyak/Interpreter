@@ -28,6 +28,8 @@ const lexer = e => {
 
     let closeCounter = 0 
 
+    let doneCounter = 0
+
     const findToken = (row , arr = []) => { 
         if(row.length > 0){
             if(![...row].some(e => e == ";" || e == "{" || e == "}" || e == ")")){
@@ -78,6 +80,10 @@ const lexer = e => {
         }
 
         if(cond){
+            doneCounter++
+            let outText = tokens.map(token => Object.values(token)[0]).join(" ") + "  " + String(doneCounter) + " true" + "\n"
+            $("textarea#tree").val($("textarea#tree").val() + outText)
+            console.log(doneCounter)
             if(Object.keys(tokens[0]) == "keyword")
                 return createVariable(tokens)
             if(Object.keys(tokens[0]) == "variable")
@@ -109,6 +115,8 @@ const lexer = e => {
 
         }
         else{
+            let outText = tokens.map(token => Object.values(token)[0]).join(" ") + "  " + "false" + "\n"
+            $("textarea#tree").val($("textarea#tree").val() + outText)
             if(openCounter - closeCounter == 0)    
                 cond = true
         }
@@ -240,6 +248,6 @@ const lexer = e => {
             return {"variable": token}
         })
         runRow(tokens)
-        //console.log(variables)
+        
     })
 }
