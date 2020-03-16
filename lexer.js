@@ -5,11 +5,11 @@ const lexer = e => {
     const tokensTypes = {
         "operation" : ["+", "-", "*", "/", "="],
         "keyword" : ["var", "const"],
-        "function" : ["out"],
+        "function" : ["out", "goto"],
         "endpoint" : [";", "{", "}"],
         "quote" : ["\"", "(", ")"],
         "condition": ["if"],
-        "loop" : ["while"]
+        "loop" : ["while"],
     }
 
     let variables = []
@@ -190,7 +190,10 @@ const lexer = e => {
             let [name, open, param, close] = tokens
             return out(param)
         }
-        
+        if(Object.values(tokens[0])[0] == "goto"){
+            let [name, open, param, close] = tokens
+            return go(param)
+        }
     }
 
     const out = param => {
@@ -210,8 +213,23 @@ const lexer = e => {
         outText = [...outText].filter(e => e != "\"").join("")
         $("textarea#output").val($("textarea#output").val() + outText)
     }
+
+    const open = href => {
+        return new Promise(resolve => {
+            console.log("here " + href)
+            window.open(href, href)
+        });
+    }
+
+    async function go(param) {
+        let href = Object.values(param)[0]
+        href = href.slice(1, href.length - 1)
+        console.log(href)
+        await open(href)
+    }
+
+
     // Need to fix Undefined variables
-    // Row 90
 
     const calcExpression = elements => {
         if(elements.length == 1)
